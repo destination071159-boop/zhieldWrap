@@ -1,7 +1,7 @@
 # fhevm
 fhevmTemp
 
-# Admin RSA private key — NEVER commit this
+# Admin RSA private key — NEVER commit this test
 admin_private.pem
 *.pem
 
