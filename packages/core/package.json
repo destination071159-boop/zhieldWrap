@@ -1,0 +1,30 @@
+{
+  "name": "@zhieldwrap/core",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./types": "./src/types.ts",
+    "./constants": "./src/constants.ts",
+    "./registry": "./src/registry.ts",
+    "./wrap": "./src/wrap.ts",
+    "./fhe": "./src/fhe.ts",
+    "./faucet": "./src/faucet.ts",
+    "./pairs.config": "./src/pairs.config.ts"
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit",
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "ethers": "^6.11.1",
+    "fixed-merkle-tree": "^0.7.3",
+    "poseidon-lite": "^0.3.0",
+    "snarkjs": "^0.7.6"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}
