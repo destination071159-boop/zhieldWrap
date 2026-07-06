@@ -169,6 +169,9 @@ export const PRIVACY_POOL_DEPLOY_BLOCK = 11_216_354;
 /** CrossSwapRouter.sol — cross-pair ERC-20 ↔ ERC-7984 routing */
 export const CROSS_SWAP_ROUTER_ADDRESS = "0x65422Cde6Af545d84184a55f6b6963B75812dcc2";
 
+/** ConfidentialSwapPool.sol — direct cToken ↔ cToken 1:1 swap, amounts hidden on-chain */
+export const CONFIDENTIAL_SWAP_POOL_ADDRESS = "0x88D2dDC39Cde7cf0195f7713784D8e60f857Fe0a";
+
 // NOTE: There is no FhEVM Gateway contract on Sepolia.
 // The Zama Gateway is a separate Arbitrum rollup chain — not a contract on any host chain.
 // @zama-fhe/react-sdk handles Gateway interaction internally; no address needed here.
