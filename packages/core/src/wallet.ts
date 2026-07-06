@@ -45,6 +45,7 @@ export interface WalletPairedToken {
   erc20Address: string;
   erc7984Address: string;
   symbol: string;
+  decimals: number;
   lastSeen: number; // unix ms
 }
 
@@ -73,6 +74,7 @@ export async function addWalletPair(pair: RegistryPair): Promise<void> {
     erc20Address:   pair.erc20Address,
     erc7984Address: pair.erc7984Address,
     symbol:         pair.symbol,
+    decimals:       pair.decimals,
     lastSeen:       Date.now(),
   };
 
