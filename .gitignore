@@ -19,6 +19,18 @@ types
 deployments
 tmp
 
+# env files
+.env
+.env.local
+.env.*.local
+
+# pnpm
+.pnpm-store/
+
+# Vite
+apps/web/dist/
+
+
 # files
 *.env
 *.log
