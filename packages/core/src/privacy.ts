@@ -199,12 +199,14 @@ export async function withdrawToERC20FromPool(
 const TREE_DEPTH = 20;
 
 /**
- * Fetch all Deposit events for a token from the pool contract and return
+ * Fetch ALL Deposit events from the pool (across all tokens) and return
  * an array of commitment bigints indexed by leafIndex.
+ *
+ * This is required for cross-token swaps: the on-chain Merkle tree includes
+ * ALL deposits regardless of token, so the off-chain rebuild must do the same.
  */
 export async function getDepositCommitments(
   poolAddress: string,
-  tokenAddress: string,
   provider: ethers.Provider
 ): Promise<bigint[]> {
   const pool = new ethers.Contract(
@@ -212,14 +214,12 @@ export async function getDepositCommitments(
     ["event Deposit(address indexed token, bytes32 indexed commitment, uint32 leafIndex, uint256 timestamp)"],
     provider
   );
-  const filter = pool.filters.Deposit(tokenAddress);
 
-  // publicnode.com free tier: max 50 000 blocks, no archive access.
-  // All recent deposits are within the last 5 000 blocks (~16 h on Sepolia).
+  // Fetch ALL deposits — no token filter so cross-token Merkle paths are correct
   const currentBlock = await provider.getBlockNumber();
   const fromBlock = Math.max(PRIVACY_POOL_DEPLOY_BLOCK, currentBlock - 5000);
 
-  const events = await pool.queryFilter(filter, fromBlock, "latest");
+  const events = await pool.queryFilter(pool.filters.Deposit(), fromBlock, "latest");
 
   const entries = events.map((e) => {
     const parsed = pool.interface.parseLog({ topics: e.topics as string[], data: e.data });
@@ -234,17 +234,18 @@ export async function getDepositCommitments(
 }
 
 /**
- * Fetch all deposit events, rebuild the Merkle tree with fixed-merkle-tree
+ * Fetch all deposit events, rebuild the full Merkle tree with fixed-merkle-tree
  * (same library as the ZK circuit tests), and return the path proof for the
  * given commitment value.
+ *
+ * Uses ALL deposits (not filtered by token) so cross-token paths are correct.
  */
 export async function getMerkleProof(
   poolAddress: string,
-  tokenAddress: string,
   commitment: bigint,
   provider: ethers.Provider
 ): Promise<{ pathElements: bigint[]; pathIndices: number[]; root: bigint }> {
-  const commitments = await getDepositCommitments(poolAddress, tokenAddress, provider);
+  const commitments = await getDepositCommitments(poolAddress, provider);
 
   const tree = new MerkleTree(TREE_DEPTH, commitments as any[], {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
