@@ -23,6 +23,7 @@ export interface TxStatus {
   message: string;
   blockNumber?: number;
   gasUsed?: bigint;
+  unwrapRequestId?: string;
 }
 
 export interface EncryptedBalance {
