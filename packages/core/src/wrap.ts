@@ -16,9 +16,50 @@ const ERC7984_ABI = [
   "function wrap(address to, uint256 amount) external returns (uint256)",
   // unwrap(from, to, externalEuint64 encryptedAmount, bytes inputProof)
   "function unwrap(address from, address to, bytes32 encryptedAmount, bytes inputProof) external returns (bytes32)",
+  // finalizeUnwrap must be called manually with cleartext + KMS proof from Zama relayer
+  "function finalizeUnwrap(bytes32 unwrapRequestId, uint64 unwrapAmountCleartext, bytes decryptionProof) external",
   "function confidentialBalanceOf(address account) view returns (bytes32)",
   "function underlying() view returns (address)",
 ];
+
+// Topic0 of UnwrapRequested(address indexed receiver, bytes32 indexed unwrapRequestId, euint64 amount)
+// keccak256("UnwrapRequested(address,bytes32,bytes32)") — euint64 is bytes32 in ABI
+const UNWRAP_REQUESTED_TOPIC0 = "0x4b1bfb262557cf08a74ddeefb8aef086b81deb08484bdc1820b9f420cdd1aa0e";
+
+/**
+ * getPendingUnwrapRequests — returns requestIds that were requested but not yet finalized.
+ * Uses a logs-capable RPC (drpc.org) for event queries, and logsProvider for contract reads.
+ */
+export async function getPendingUnwrapRequests(
+  wrapperAddress: string,
+  userAddress: string,
+  logsProvider: ethers.Provider,
+  fromBlock: number
+): Promise<string[]> {
+  const ABI = ["function unwrapRequester(bytes32 unwrapRequestId) view returns (address)"];
+  const wrapper = new ethers.Contract(wrapperAddress, ABI, logsProvider);
+
+  const logs = await logsProvider.getLogs({
+    address: wrapperAddress,
+    topics: [
+      UNWRAP_REQUESTED_TOPIC0,
+      ethers.zeroPadValue(userAddress, 32),
+    ],
+    fromBlock,
+    toBlock: "latest",
+  });
+
+  const pending: string[] = [];
+  for (const log of logs) {
+    const requestId = log.topics[2];
+    if (!requestId) continue;
+    const requester = await wrapper.unwrapRequester(requestId) as string;
+    if (requester.toLowerCase() === userAddress.toLowerCase()) {
+      pending.push(requestId);
+    }
+  }
+  return pending;
+}
 
 /**
  * getERC20Balance — returns the raw ERC-20 balance of a wallet
@@ -123,11 +164,11 @@ export async function wrapToken(
 /**
  * unwrapToken — unwraps ERC-7984 confidential tokens back to ERC-20.
  * Requires an encrypted amount handle + inputProof from the Zama SDK encrypt hook.
- * The Gateway will call finalizeUnwrap automatically after ~1 block to send the ERC-20.
+ * Returns unwrapRequestId in TxStatus — caller must then call finalizeUnwrap to complete the flow.
  */
 export async function unwrapToken(
   pair: RegistryPair,
-  amount: bigint,
+  _amount: bigint,
   encryptedAmount: string, // bytes32 externalEuint64 handle from Zama SDK
   inputProof: string,      // bytes input proof from Zama SDK
   signer: ethers.Signer
@@ -137,14 +178,21 @@ export async function unwrapToken(
 
   try {
     const tx = await wrapper.unwrap(userAddress, userAddress, encryptedAmount, inputProof);
-    const receipt = await tx.wait(1);
+    const receipt = await tx.wait(1) as ethers.TransactionReceipt;
+
+    // Extract unwrapRequestId from UnwrapRequested event (topic[2] = bytes32 requestId)
+    const unwrapLog = receipt.logs.find(
+      (l) => l.topics[0]?.toLowerCase() === UNWRAP_REQUESTED_TOPIC0.toLowerCase()
+    );
+    const unwrapRequestId = unwrapLog?.topics[2] ?? undefined;
 
     return {
       hash: tx.hash as string,
       status: "confirmed",
-      message: `Unwrap requested — ${ethers.formatUnits(amount, pair.decimals)} ${pair.symbol} → ${pair.underlyingSymbol} (ERC-20 arrives after Gateway finalizes in ~30s)`,
-      blockNumber: (receipt as ethers.TransactionReceipt).blockNumber,
-      gasUsed: (receipt as ethers.TransactionReceipt).gasUsed,
+      message: `Unwrap initiated — fetching decryption proof from KMS...`,
+      blockNumber: receipt.blockNumber,
+      gasUsed: receipt.gasUsed,
+      unwrapRequestId,
     };
   } catch (error: unknown) {
     if (
@@ -157,6 +205,44 @@ export async function unwrapToken(
     }
     const msg = error instanceof Error ? error.message : String(error);
     throw new Error(`Unwrap failed: ${msg}`);
+  }
+}
+
+/**
+ * finalizeUnwrap — completes an unwrap by calling finalizeUnwrap on the wrapper contract.
+ * Must be called after unwrapToken with the cleartext + decryptionProof from Zama's public decrypt API.
+ */
+export async function finalizeUnwrap(
+  pair: RegistryPair,
+  unwrapRequestId: string,  // bytes32 handle from UnwrapRequested event
+  cleartext: bigint,        // decrypted amount from publicDecrypt
+  decryptionProof: string,  // KMS signature from publicDecrypt
+  signer: ethers.Signer
+): Promise<TxStatus> {
+  const wrapper = new ethers.Contract(pair.erc7984Address, ERC7984_ABI, signer);
+
+  try {
+    const tx = await wrapper.finalizeUnwrap(unwrapRequestId, cleartext, decryptionProof);
+    const receipt = await tx.wait(1) as ethers.TransactionReceipt;
+
+    return {
+      hash: tx.hash as string,
+      status: "confirmed",
+      message: `Unwrapped ${ethers.formatUnits(cleartext, pair.decimals)} ${pair.symbol} → ${pair.underlyingSymbol} successfully`,
+      blockNumber: receipt.blockNumber,
+      gasUsed: receipt.gasUsed,
+    };
+  } catch (error: unknown) {
+    if (
+      error !== null &&
+      typeof error === "object" &&
+      "code" in error &&
+      (error as { code: string }).code === "ACTION_REJECTED"
+    ) {
+      return { hash: "", status: "failed", message: "User rejected finalization" };
+    }
+    const msg = error instanceof Error ? error.message : String(error);
+    throw new Error(`FinalizeUnwrap failed: ${msg}`);
   }
 }
 
