@@ -7,12 +7,14 @@ import { ethers } from "ethers";
 // ── ABI ───────────────────────────────────────────────────────────────────────
 
 const ROUTER_ABI = [
-  "function swap(address inputERC20, address inputERC7984, address outputERC20, address outputERC7984, uint256 amount) external returns (uint256 outputAmount)",
-  "function estimateOutput(address inputERC20, address outputERC20, uint256 amount) external view returns (uint256)",
-  "function registerPair(address erc20A, address erc7984A, address erc20B, address erc7984B) external",
-  "function getPairCount() external view returns (uint256)",
-  "function isPairRegistered(address erc20A, address erc20B) external view returns (bool)",
-  "event Swap(address indexed inputERC20, address indexed outputERC20, address indexed trader, uint256 inputAmount, uint256 outputAmount)",
+  // CrossSwapRouter.sol: swap(inputERC20, inputERC7984, outputERC7984, outputERC20, amount)
+  "function swap(address inputERC20, address inputERC7984, address outputERC7984, address outputERC20, uint256 amount) external returns (uint256 outputAmount)",
+  "function estimateOutput(address inputERC20, address outputERC20, uint256 inputAmount) external pure returns (uint256)",
+  // registerPair(erc20, erc7984, decimals) — one pair at a time
+  "function registerPair(address erc20, address erc7984, uint8 decimals) external",
+  // public mapping getter: pairs(bytes32) → (erc20, erc7984, decimals, active)
+  "function pairs(bytes32 id) external view returns (address erc20, address erc7984, uint8 decimals, bool active)",
+  "event SwapExecuted(address indexed user, address inputToken, address outputToken, uint256 inputAmount, uint256 outputAmount)",
 ];
 
 const ERC20_APPROVE_ABI = [
@@ -48,23 +50,27 @@ export async function estimateSwapOutput(
   return router.estimateOutput(inputERC20, outputERC20, amount) as Promise<bigint>;
 }
 
+/**
+ * Check whether both the input and output pairs are registered in the router.
+ * The contract stores pairs keyed by keccak256(abi.encodePacked(erc20, erc7984)).
+ * There is no isPairRegistered view — we compute both IDs and call pairs() directly.
+ */
 export async function isPairRegistered(
   routerAddress: string,
-  erc20A: string,
-  erc20B: string,
+  inputERC20: string,
+  inputERC7984: string,
+  outputERC20: string,
+  outputERC7984: string,
   provider: ethers.Provider
 ): Promise<boolean> {
   const router = new ethers.Contract(routerAddress, ROUTER_ABI, provider);
-  return router.isPairRegistered(erc20A, erc20B) as Promise<boolean>;
-}
-
-export async function getPairCount(
-  routerAddress: string,
-  provider: ethers.Provider
-): Promise<number> {
-  const router = new ethers.Contract(routerAddress, ROUTER_ABI, provider);
-  const count = await router.getPairCount() as bigint;
-  return Number(count);
+  const idA = ethers.keccak256(ethers.solidityPacked(["address", "address"], [inputERC20,  inputERC7984]));
+  const idB = ethers.keccak256(ethers.solidityPacked(["address", "address"], [outputERC20, outputERC7984]));
+  const [pairA, pairB] = await Promise.all([
+    router.pairs(idA) as Promise<{ active: boolean }>,
+    router.pairs(idB) as Promise<{ active: boolean }>,
+  ]);
+  return pairA.active && pairB.active;
 }
 
 /**
@@ -87,8 +93,8 @@ export async function executeSwap(
   const tx = await router.swap(
     route.inputERC20,
     route.inputERC7984,
+    route.outputERC7984,   // contract order: outputERC7984 before outputERC20
     route.outputERC20,
-    route.outputERC7984,
     amount
   );
   const receipt = await tx.wait();
@@ -99,7 +105,7 @@ export async function executeSwap(
   for (const log of receipt.logs ?? []) {
     try {
       const parsed = iface.parseLog({ topics: log.topics as string[], data: log.data });
-      if (parsed?.name === "Swap") {
+      if (parsed?.name === "SwapExecuted") {
         outputAmount = BigInt(parsed.args[4]);
       }
     } catch {
