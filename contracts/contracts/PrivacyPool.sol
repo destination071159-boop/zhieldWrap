@@ -150,6 +150,7 @@ contract PrivacyPool is ZamaEthereumConfig, MerkleTree, IERC7984Receiver {
     bytes32 nullifier = _validateAndSpendNullifier(pA, pB, pC, pubSignals);
 
     euint64 withdrawAmount = FHE.asEuint64(uint64(amount));
+    FHE.allowTransient(withdrawAmount, token);
     IERC7984Pool(token).confidentialTransfer(msg.sender, withdrawAmount);
 
     if (anonymitySet[token] > 0) anonymitySet[token]--;
@@ -182,6 +183,7 @@ contract PrivacyPool is ZamaEthereumConfig, MerkleTree, IERC7984Receiver {
     bytes32 nullifier = _validateAndSpendNullifier(pA, pB, pC, pubSignals);
 
     euint64 withdrawAmount = FHE.asEuint64(uint64(amount));
+    FHE.allowTransient(withdrawAmount, wrapper);
     bytes32 requestId = IERC7984Wrapper(wrapper).unwrap(address(this), msg.sender, withdrawAmount);
 
     if (anonymitySet[wrapper] > 0) anonymitySet[wrapper]--;
