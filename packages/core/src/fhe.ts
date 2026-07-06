@@ -11,6 +11,8 @@ const METADATA_ABI = [
 // ERC-7984 balance handle ABI
 const ERC7984_BALANCE_ABI = [
   "function getHandle(address owner) view returns (bytes32)",
+  // OZ ERC7984ERC20Wrapper uses confidentialBalanceOf
+  "function confidentialBalanceOf(address owner) view returns (bytes32)",
   // Some implementations expose balanceOf returning bytes32 directly
   "function balanceOf(address owner) view returns (bytes32)",
 ];
@@ -53,16 +55,13 @@ export async function validateERC7984Contract(
     throw new Error("No contract found at this address on Sepolia");
   }
 
-  // Attempt to call getHandle or balanceOf — ERC-7984 must have one of these
+  // Attempt to call getHandle / confidentialBalanceOf / balanceOf — ERC-7984 must have one
   try {
     const contract = new ethers.Contract(tokenAddress, ERC7984_BALANCE_ABI, provider);
-    // Try getHandle first, then balanceOf
     const signerAddress = "0x0000000000000000000000000000000000000001";
-    try {
-      await contract.getHandle(signerAddress);
-    } catch {
-      await contract.balanceOf(signerAddress);
-    }
+    try { await contract.getHandle(signerAddress); }
+    catch { try { await contract.confidentialBalanceOf(signerAddress); }
+    catch { await contract.balanceOf(signerAddress); } }
   } catch {
     throw new Error("This address does not appear to be a valid ERC-7984 token contract");
   }
@@ -83,8 +82,12 @@ export async function getERC7984Handle(
     const handle = await contract.getHandle(userAddress);
     return handle as `0x${string}`;
   } catch {
-    // Some ERC-7984 tokens expose balanceOf returning bytes32
-    const handle = await contract.balanceOf(userAddress);
-    return handle as `0x${string}`;
+    try {
+      const handle = await contract.confidentialBalanceOf(userAddress);
+      return handle as `0x${string}`;
+    } catch {
+      const handle = await contract.balanceOf(userAddress);
+      return handle as `0x${string}`;
+    }
   }
 }
