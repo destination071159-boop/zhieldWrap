@@ -1,5 +1,5 @@
 {
-  "name": "vulnvault",
+  "name": "zhieldwrap",
   "description": "Confidential Bug Bounty Platform — FHE + ZK privacy-preserving bug bounty infrastructure",
   "version": "0.4.1",
   "engines": {
