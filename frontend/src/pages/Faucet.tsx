@@ -8,7 +8,7 @@ import { fetchAllPairs, OFFICIAL_PAIRS, getERC20Balance, FAUCET_MINT_AMOUNT, get
 import { useFaucet } from "../hooks/useFaucet";
 import { TxStatusModal } from "../components/ui/TxStatusModal";
 
-const SEPOLIA_RPC = import.meta.env.VITE_SEPOLIA_RPC ?? "https://sepolia.drpc.org";
+const SEPOLIA_RPC = import.meta.env.VITE_SEPOLIA_RPC ?? "https://sepolia.infura.io/v3/af5f1e33ac0c4cd69daa3f63a587723e";
 
 function formatCooldown(ms: number): string {
   if (ms <= 0) return "";

@@ -11,7 +11,7 @@ export const REGISTRY_CONTRACT_ADDRESS = "0x2f0750Bbb0A246059d80e94c454586a7F27a
 
 export const SEPOLIA_RPC = "https://ethereum-sepolia-rpc.publicnode.com";
 // drpc.org: free, CORS-enabled, supports eth_getLogs without archive restrictions
-export const SEPOLIA_LOGS_RPC = "https://sepolia.drpc.org";
+export const SEPOLIA_LOGS_RPC = "https://sepolia.infura.io/v3/af5f1e33ac0c4cd69daa3f63a587723e";
 export const SEPOLIA_EXPLORER = "https://sepolia.etherscan.io";
 
 // ─────────────────────────────────────────────────────────────────────────────
