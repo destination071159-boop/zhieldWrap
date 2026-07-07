@@ -8,14 +8,13 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "turbo run dev",
-    "build": "turbo run build",
-    "lint": "turbo run lint",
-    "type-check": "turbo run type-check",
-    "clean": "turbo run clean"
+    "dev": "pnpm --filter @zhieldwrap/web dev",
+    "build": "pnpm --filter @zhieldwrap/web build",
+    "lint": "pnpm --filter @zhieldwrap/web lint",
+    "type-check": "pnpm --filter @zhieldwrap/web type-check",
+    "clean": "pnpm --filter @zhieldwrap/web exec rm -rf dist"
   },
   "devDependencies": {
-    "turbo": "^2.0.0",
     "typescript": "^5.4.5"
   }
 }
