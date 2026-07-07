@@ -2,7 +2,7 @@
   "name": "zhieldwrap",
   "version": "1.0.0",
   "private": true,
-  "packageManager": "pnpm@11.8.0",
+  "packageManager": "pnpm@9.15.4",
   "workspaces": [
     "apps/*",
     "packages/*"
