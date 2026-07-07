@@ -215,12 +215,18 @@ export async function getDepositCommitments(
     provider
   );
 
-  // Fetch ALL deposits from deploy block — no block limit so old deposits are found
-  const fromBlock = PRIVACY_POOL_DEPLOY_BLOCK;
+  // Paginate in 50k-block chunks — Infura/Alchemy reject larger ranges
+  const CHUNK = 50_000;
+  const currentBlock = await provider.getBlockNumber();
+  const allEvents: ethers.Log[] = [];
 
-  const events = await pool.queryFilter(pool.filters.Deposit(), fromBlock, "latest");
+  for (let from = PRIVACY_POOL_DEPLOY_BLOCK; from <= currentBlock; from += CHUNK) {
+    const to = Math.min(from + CHUNK - 1, currentBlock);
+    const chunk = await pool.queryFilter(pool.filters.Deposit(), from, to);
+    allEvents.push(...(chunk as ethers.Log[]));
+  }
 
-  const entries = events.map((e) => {
+  const entries = allEvents.map((e) => {
     const parsed = pool.interface.parseLog({ topics: e.topics as string[], data: e.data });
     return { commitment: BigInt(parsed!.args[1]), leafIndex: Number(parsed!.args[2]) };
   }).sort((a, b) => a.leafIndex - b.leafIndex);
