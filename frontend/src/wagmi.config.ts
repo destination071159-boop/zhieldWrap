@@ -13,7 +13,7 @@ export const wagmiConfig = createConfig({
   ],
   transports: {
     [sepolia.id]: http(
-      import.meta.env.VITE_SEPOLIA_RPC ?? "https://rpc.sepolia.org"
+      import.meta.env.VITE_SEPOLIA_RPC ?? "https://sepolia.drpc.org"
     ),
   },
 });

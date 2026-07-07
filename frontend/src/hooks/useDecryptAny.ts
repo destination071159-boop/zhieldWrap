@@ -19,7 +19,7 @@ export interface DecryptedTokenInfo {
   isInRegistry: boolean;
 }
 
-const SEPOLIA_RPC = import.meta.env.VITE_SEPOLIA_RPC ?? "https://rpc.sepolia.org";
+const SEPOLIA_RPC = import.meta.env.VITE_SEPOLIA_RPC ?? "https://sepolia.drpc.org";
 
 export function useDecryptAny() {
   const [step, setStep] = useState<DecryptAnyStep>("idle");

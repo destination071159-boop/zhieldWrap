@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 
 import { useUserDecrypt } from "@zama-fhe/react-sdk";
 
-const SEPOLIA_RPC = import.meta.env.VITE_SEPOLIA_RPC ?? "https://rpc.sepolia.org";
+const SEPOLIA_RPC = import.meta.env.VITE_SEPOLIA_RPC ?? "https://sepolia.drpc.org";
 
 interface BalanceRowProps {
   pair: RegistryPair;
