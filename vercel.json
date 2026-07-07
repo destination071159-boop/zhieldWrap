@@ -1,6 +1,6 @@
 {
-  "buildCommand": "pnpm --filter @zhieldwrap/web build",
+  "buildCommand": "cd apps/web && npm run build",
   "outputDirectory": "apps/web/dist",
-  "installCommand": "npm install -g pnpm@8.15.6 && pnpm install --no-frozen-lockfile",
+  "installCommand": "npm install --prefix apps/web",
   "framework": null
 }

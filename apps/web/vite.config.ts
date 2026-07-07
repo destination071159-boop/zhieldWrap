@@ -22,7 +22,7 @@ export default defineConfig({
   plugins: [react(), wagmiCompatPlugin()],
   resolve: {
     alias: {
-      "@zhieldwrap/core": path.resolve(__dirname, "../../packages/core/src/index.ts"),
+      "@zhieldwrap/core": path.resolve(__dirname, "src/core/index.ts"),
     },
   },
   define: {

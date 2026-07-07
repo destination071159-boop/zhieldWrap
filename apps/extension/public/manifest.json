@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "ZhieldWrap",
+  "version": "1.0.0",
+  "description": "Manage your confidential token pairs (ERC-7984) directly from your browser.",
+  "icons": {
+    "16":  "icons/icon16.png",
+    "48":  "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "ZhieldWrap"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*/*", "http://*/*"],
+      "js":      ["content.js"],
+      "run_at":  "document_idle"
+    }
+  ],
+  "permissions": [
+    "activeTab",
+    "storage",
+    "notifications",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; worker-src 'self'"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["relayer-sdk-js.umd.cjs", "tfhe_bg.wasm", "kms_lib_bg.wasm"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

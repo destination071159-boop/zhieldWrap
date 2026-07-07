@@ -1,19 +1,5 @@
 {
   "name": "zhieldwrap",
   "version": "1.0.0",
-  "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
-  "scripts": {
-    "dev": "pnpm --filter @zhieldwrap/web dev",
-    "build": "pnpm --filter @zhieldwrap/web build",
-    "lint": "pnpm --filter @zhieldwrap/web lint",
-    "type-check": "pnpm --filter @zhieldwrap/web type-check",
-    "clean": "pnpm --filter @zhieldwrap/web exec rm -rf dist"
-  },
-  "devDependencies": {
-    "typescript": "^5.4.5"
-  }
+  "private": true
 }

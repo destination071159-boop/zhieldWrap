@@ -13,8 +13,8 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "paths": {
-      "@zhieldwrap/core": ["../../packages/core/src/index.ts"],
-      "@zhieldwrap/core/*": ["../../packages/core/src/*.ts"]
+      "@zhieldwrap/core": ["./src/core/index.ts"],
+      "@zhieldwrap/core/*": ["./src/core/*.ts"]
     }
   },
   "include": ["src"],
