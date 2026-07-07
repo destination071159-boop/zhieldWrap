@@ -215,9 +215,8 @@ export async function getDepositCommitments(
     provider
   );
 
-  // Fetch ALL deposits — no token filter so cross-token Merkle paths are correct
-  const currentBlock = await provider.getBlockNumber();
-  const fromBlock = Math.max(PRIVACY_POOL_DEPLOY_BLOCK, currentBlock - 5000);
+  // Fetch ALL deposits from deploy block — no block limit so old deposits are found
+  const fromBlock = PRIVACY_POOL_DEPLOY_BLOCK;
 
   const events = await pool.queryFilter(pool.filters.Deposit(), fromBlock, "latest");
 
